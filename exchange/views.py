@@ -2,17 +2,32 @@ from django.shortcuts import render
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.views import APIView
-from rest_framework.decorators import api_view
 
-from django.views.decorators.cache import cache_page
+from django.core.cache import cache
 import requests
 
-# функция дает ответ по api
+
+# получаем список возможных валют
+def get_currencies(request):
+    cache_cur = cache.get('curr')
+    if not cache_cur:
+        response = requests.get(
+            url="https://currate.ru/api/?get=currency_list&key=3259fd1fd93cf66b126c1626ae9c850a").json()
+        currencies = response.get("data")
+        tmp = set()
+        # в ответе приходят пары валют на подобие RUBEUR,
+        # поэтому вначале почистим и выделим уникальные
+        for cur in currencies:
+            new = cur[:3]
+            tmp.add(new)
+        cache.set('curr', list(tmp), 60)
+        return list(tmp)
+    else:
+        return cache_cur
 
 
-@api_view(('GET',))
-def exchange_api(request):
-    if request.method == "GET":
+class ResponseAPI(APIView):
+    def get(self, request):
         from_currency = request.GET.get('from')
         to_currency = request.GET.get('to')
         val = int(request.GET.get('value'))
@@ -33,22 +48,6 @@ def exchange_api(request):
             'result': converted_amount,
         }
         return Response(context, status=status.HTTP_200_OK)
-
-
-# получаем список возможных валют
-@cache_page(60 * 15)
-def get_currencies(request):
-    response = requests.get(
-        url="https://currate.ru/api/?get=currency_list&key=3259fd1fd93cf66b126c1626ae9c850a").json()
-    currencies = response.get("data")
-
-    tmp = set()
-    # в ответе приходят пары валют на подобие RUBEUR, поэтому вначале почистим
-    # и выделим уникальные
-    for cur in currencies:
-        new = cur[:3]
-        tmp.add(new)
-    return list(tmp)
 
 
 # класс для графической формы
