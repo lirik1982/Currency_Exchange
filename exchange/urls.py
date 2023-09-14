@@ -1,7 +1,7 @@
 from django.urls import path
-from .views import exchange, exchange_api
+from .views import Main, exchange_api
 
 urlpatterns = [
     path('api/rates', exchange_api),
-    path('', exchange, name='exchange'),
+    path('', Main.as_view(), name='exchange'),
 ]
