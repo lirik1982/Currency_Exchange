@@ -69,6 +69,6 @@ def exchange(request):
 
     return render(
         request=request,
-        template_name="exchange_app\index.html",
+        template_name="index.html",
         context=context
     )
