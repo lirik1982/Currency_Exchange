@@ -2,8 +2,10 @@ from django.shortcuts import render
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.views import APIView
-import requests
 from rest_framework.decorators import api_view
+
+from django.views.decorators.cache import cache_page
+import requests
 
 # функция дает ответ по api
 
@@ -23,7 +25,7 @@ def exchange_api(request):
         get_rate = response.get("data")
         try:
             rate = get_rate[pair]
-        except:
+        except TypeError:
             rate = 0
 
         converted_amount = val * float(rate)
@@ -34,6 +36,7 @@ def exchange_api(request):
 
 
 # получаем список возможных валют
+@cache_page(60 * 15)
 def get_currencies(request):
     response = requests.get(
         url="https://currate.ru/api/?get=currency_list&key=3259fd1fd93cf66b126c1626ae9c850a").json()
@@ -76,7 +79,7 @@ class Main(APIView):
         get_rate = response.get("data")
         try:
             rate = get_rate[pair]
-        except:
+        except TypeError:
             rate = 0
         converted_amount = from_amount * float(rate)
         context = {
