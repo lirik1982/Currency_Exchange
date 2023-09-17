@@ -1,10 +1,9 @@
 from django.shortcuts import render
-from rest_framework.response import Response
-from rest_framework import status
 from rest_framework.views import APIView
 
 from django.core.cache import cache
 import requests
+import urllib.parse
 
 
 # получаем список возможных валют
@@ -26,31 +25,6 @@ def get_currencies(request):
         return cache_cur
 
 
-class ResponseAPI(APIView):
-    def get(self, request):
-        from_currency = request.GET.get('from')
-        to_currency = request.GET.get('to')
-        val = int(request.GET.get('value'))
-        pair = from_currency + to_currency
-
-        req = "https://currate.ru/api/?get=rates&pairs=" + \
-            pair + "&key=3259fd1fd93cf66b126c1626ae9c850a"
-
-        response = requests.get(url=req).json()
-        get_rate = response.get("data")
-        try:
-            rate = get_rate[pair]
-        except TypeError:
-            rate = 0
-
-        converted_amount = val * float(rate)
-        context = {
-            'result': converted_amount,
-        }
-        return Response(context, status=status.HTTP_200_OK)
-
-
-# класс для графической формы
 class Main(APIView):
 
     def get(self, request):
@@ -72,8 +46,14 @@ class Main(APIView):
         to_curr = request.POST.get('to_curr')
 
         pair = from_curr + to_curr
-        req = "https://currate.ru/api/?get=rates&pairs=" + \
-            pair + "&key=3259fd1fd93cf66b126c1626ae9c850a"
+        url = "https://currate.ru/api/?"
+        params = {
+            "get": "rates",
+            "pairs": pair,
+            "key": "3259fd1fd93cf66b126c1626ae9c850a",
+        }
+        req = url + urllib.parse.urlencode(params)
+
         response = requests.get(url=req).json()
         get_rate = response.get("data")
         try:
